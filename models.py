@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 bcrypt = Bcrypt()
 db = SQLAlchemy()
+DEFAULT_IMAGE_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqcyT1Hcd2XWP-b7fGuLsE-TIsj73rwSs3wvyTUI0mGg&s'
 
 
 class City(db.Model):
@@ -28,6 +29,15 @@ class City(db.Model):
         db.String(2),
         nullable=False,
     )
+
+    @classmethod
+    def get_choices(self):
+        """
+        gets all current cities from database, returns list
+        of tuples (city code, city name)
+        """
+        return [(city.code, city.name) for city in City.query.all()]
+
 
 
 class Cafe(db.Model):

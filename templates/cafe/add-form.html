@@ -6,6 +6,14 @@
 
 <h1 class="mb-4">Add Cafe</h1>
 
-<!-- form goes here -->
+<form>
+
+  {% include "_form.html" %}
+  <div>
+    <a href="/" class = "btn btn-outline-primary">Cancel</a>
+    <button class ='btn btn-primary' formmethod="POST" formaction="/cafes/add">Add</button>
+  </div>
+
+</form>
 
 {% endblock %}

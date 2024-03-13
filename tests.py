@@ -6,7 +6,7 @@ import os
 os.environ["DATABASE_URL"] = "postgresql:///flaskcafe_test"
 os.environ["FLASK_DEBUG"] = "0"
 
-# import re
+import re
 from unittest import TestCase
 
 # from flask import session
@@ -61,14 +61,14 @@ CAFE_DATA = dict(
     image_url="http://testcafeimg.com/"
 )
 
-# CAFE_DATA_EDIT = dict(
-#     name="new-name",
-#     description="new-description",
-#     url="http://new-image.com/",
-#     address="500 Sansome St",
-#     city_code="sf",
-#     image_url="http://new-image.com/"
-# )
+CAFE_DATA_EDIT = dict(
+    name="new-name",
+    description="new-description",
+    url="http://new-image.com/",
+    address="500 Sansome St",
+    city_code="sf",
+    image_url="http://new-image.com/"
+)
 
 # TEST_USER_DATA = dict(
 #     username="test",
@@ -229,78 +229,79 @@ class CafeViewsTestCase(TestCase):
             self.assertIn(b'testcafe.com', resp.data)
 
 
-# class CafeAdminViewsTestCase(TestCase):
-#     """Tests for add/edit views on cafes."""
+class CafeAdminViewsTestCase(TestCase):
+    """Tests for add/edit views on cafes."""
 
-#     def setUp(self):
-#         """Before each test, add sample city, users, and cafes"""
+    def setUp(self):
+        """Before each test, add sample city, users, and cafes"""
+        City.query.delete()
+        Cafe.query.delete()
 
-#         City.query.delete()
-#         Cafe.query.delete()
 
-#         sf = City(**CITY_DATA)
-#         db.session.add(sf)
+        sf = City(**CITY_DATA)
+        db.session.add(sf)
 
-#         cafe = Cafe(**CAFE_DATA)
-#         db.session.add(cafe)
 
-#         db.session.commit()
+        cafe = Cafe(**CAFE_DATA)
+        db.session.add(cafe)
 
-#         self.cafe_id = cafe.id
+        db.session.commit()
 
-#     def tearDown(self):
-#         """After each test, delete the cities."""
+        self.cafe_id = cafe.id
 
-#         Cafe.query.delete()
-#         City.query.delete()
-#         db.session.commit()
+    def tearDown(self):
+        """After each test, delete the cities."""
 
-#     def test_add(self):
-#         with app.test_client() as client:
-#             resp = client.get(f"/cafes/add")
-#             self.assertIn(b'Add Cafe', resp.data)
+        Cafe.query.delete()
+        City.query.delete()
+        db.session.commit()
 
-#             resp = client.post(
-#                 f"/cafes/add",
-#                 data=CAFE_DATA_EDIT,
-#                 follow_redirects=True)
-#             self.assertIn(b'added', resp.data)
+    def test_add(self):
+        with app.test_client() as client:
+            resp = client.get(f"/cafes/add")
+            self.assertIn(b'Add Cafe', resp.data)
 
-#    def test_dynamic_cities_vocab(self):
-#        id = self.cafe_id
+            resp = client.post(
+                f"/cafes/add",
+                data=CAFE_DATA_EDIT,
+                follow_redirects=True)
+            self.assertIn(b'added', resp.data)
 
-#        # the following is a regular expression for the HTML for the drop-down
-#        # menu pattern we want to check for
-#        choices_pattern = re.compile(
-#            r'<select [^>]*name="city_code"[^>]*><option [^>]*value="sf">' +
-#            r'San Francisco</option></select>')
+    def test_dynamic_cities_vocab(self):
+        id = self.cafe_id
 
-#        with app.test_client() as client:
-#            resp = client.get(f"/cafes/add")
-#            self.assertRegex(resp.data.decode('utf8'), choices_pattern)
+        # the following is a regular expression for the HTML for the drop-down
+        # menu pattern we want to check for
+        choices_pattern = re.compile(
+            r'<select [^>]*name="city_code"[^>]*><option [^>]*value="sf">' +
+            r'San Francisco</option></select>')
 
-#            resp = client.get(f"/cafes/{id}/edit")
-#            self.assertRegex(resp.data.decode('utf8'), choices_pattern)
+        with app.test_client() as client:
+            resp = client.get(f"/cafes/add")
+            self.assertRegex(resp.data.decode('utf8'), choices_pattern)
 
-#     def test_edit(self):
-#         id = self.cafe_id
+            resp = client.get(f"/cafes/{id}/edit")
+            self.assertRegex(resp.data.decode('utf8'), choices_pattern)
 
-#         with app.test_client() as client:
-#             resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
-#             self.assertIn(b'Edit Test Cafe', resp.data)
+    def test_edit(self):
+        id = self.cafe_id
 
-#             resp = client.post(
-#                 f"/cafes/{id}/edit",
-#                 data=CAFE_DATA_EDIT,
-#                 follow_redirects=True)
-#             self.assertIn(b'edited', resp.data)
+        with app.test_client() as client:
+            resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
+            self.assertIn(b'Edit Test Cafe', resp.data)
 
-#    def test_edit_form_shows_curr_data(self):
-#        id = self.cafe_id
+            resp = client.post(
+                f"/cafes/{id}/edit",
+                data=CAFE_DATA_EDIT,
+                follow_redirects=True)
+            self.assertIn(b'edited', resp.data)
 
-#        with app.test_client() as client:
-#            resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
-#            self.assertIn(b'Test description', resp.data)
+    def test_edit_form_shows_curr_data(self):
+        id = self.cafe_id
+
+        with app.test_client() as client:
+            resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
+            self.assertIn(b'Test description', resp.data)
 
 
 #######################################

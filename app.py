@@ -2,10 +2,11 @@
 
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, flash, redirect, url_for
 from flask_debugtoolbar import DebugToolbarExtension
 
-from models import connect_db, Cafe
+from models import connect_db, Cafe, db, City, DEFAULT_IMAGE_URL
+from forms import AddEditCafeForm
 
 
 app = Flask(__name__)
@@ -90,3 +91,57 @@ def cafe_detail(cafe_id):
         'cafe/detail.html',
         cafe=cafe,
     )
+
+@app.route('/cafes/add', methods = ["GET", "POST"])
+def add_cafe():
+    """
+    GET: show form to add a cafe
+    POST: handle form submission and add a cafe to DB
+    """
+    form = AddEditCafeForm()
+    form.city_code.choices = City.get_choices()
+
+    if form.validate_on_submit():
+        cafe = Cafe(
+            name=form.name.data,
+            description=form.description.data,
+            url=form.url.data,
+            address=form.address.data,
+            city_code=form.city_code.data,
+            image_url=form.image_url.data or None
+        )
+
+        db.session.add(cafe)
+        db.session.commit()
+
+        flash(f'{cafe.name} added!')
+        redirect_url=url_for('cafe_detail', cafe_id=cafe.id)
+        return redirect(redirect_url)
+
+    return render_template('cafe/add-form.html', form=form)
+
+@app.route('/cafes/<int:cafe_id>/edit', methods = ["GET", "POST"])
+def edit_cafe(cafe_id):
+    """
+    GET: show form to edit a cafe
+    POST: handle form submission to edit a cafe
+    """
+
+    cafe = Cafe.query.get_or_404(cafe_id)
+
+    form = AddEditCafeForm(obj=cafe)
+    form.city_code.choices = City.get_choices()
+
+    if form.validate_on_submit():
+        form.populate_obj(cafe)
+        cafe.image_url = form.image_url.data or DEFAULT_IMAGE_URL
+
+        db.session.commit()
+
+        flash(f'{cafe.name} edited!')
+        redirect_url = url_for('cafe_detail', cafe_id=cafe.id)
+        return redirect(redirect_url)
+
+    return render_template('cafe/edit-form.html', form=form, cafe=cafe)
+
+
