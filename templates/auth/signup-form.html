@@ -9,7 +9,14 @@
 
     <h1 class="mb-4">Sign Up!</h1>
 
-    <!-- form goes here -->
+    <form action="/signup" method="POST">
+
+      {% include '_form.html' %}
+
+      <button type="submit" class="btn btn-primary">Sign Up</button>
+      <a href="/login" class="btn btn-info">Sign in with Existing Account</a>
+    </form>
+
 
   </div>
 </div>
