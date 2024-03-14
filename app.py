@@ -8,7 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 
 from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User
-from forms import AddEditCafeForm, SignUpForm, CSRFProtectForm, LoginForm
+from forms import AddEditCafeForm, SignUpForm, CSRFProtectForm, LoginForm, ProfileEditForm
 
 
 app = Flask(__name__)
@@ -255,3 +255,43 @@ def edit_cafe(cafe_id):
     return render_template('cafe/edit-form.html', form=form, cafe=cafe)
 
 
+#########################
+# user profiles
+
+@app.get('/profile')
+def display_user_profile():
+    """Show user profile page."""
+
+    if not g.user:
+        flash(NOT_LOGGED_IN_MSG, "danger")
+        return redirect("/login")
+
+    return render_template('profile/detail.html')
+
+@app.route('/profile/edit', methods=["POST", "GET"])
+def edit_user():
+    """
+    GET: shows edit profile form
+    POST: handle edit profile form submission
+    """
+    if not g.user:
+        flash(NOT_LOGGED_IN_MSG, "danger")
+        return redirect("/login")
+
+    form = ProfileEditForm(obj=g.user)
+
+    if form.validate_on_submit():
+        form.populate_obj(g.user)
+
+        g.user.image_url = form.image_url.data or DEFAULT_PROF_IMG_URL
+
+        db.session.commit()
+
+        flash('Profile edited.')
+        return redirect(url_for('display_user_profile'))
+
+    # so we don't have /static/images/default-pic.png as a default arg in form
+    if g.user.image_url == User.image_url.default.arg:
+        form.image_url.data = ""
+
+    return render_template('/profile/edit-form.html', form=form)

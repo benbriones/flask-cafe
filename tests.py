@@ -497,38 +497,69 @@ class NavBarTestCase(TestCase):
             self.assertEqual(session.get(CURR_USER_KEY), self.user_id)
 
 
-# class ProfileViewsTestCase(TestCase):
-#     """Tests for views on user profiles."""
+class ProfileViewsTestCase(TestCase):
+    """Tests for views on user profiles."""
 
-#     def setUp(self):
-#         """Before each test, add sample user."""
+    def setUp(self):
+        """Before each test, add sample user."""
 
-#         User.query.delete()
+        User.query.delete()
 
-#         user = User.register(**TEST_USER_DATA)
-#         db.session.add(user)
+        user = User.register(**TEST_USER_DATA)
+        db.session.add(user)
 
-#         db.session.commit()
+        db.session.commit()
 
-#         self.user_id = user.id
+        self.user_id = user.id
 
-#     def tearDown(self):
-#         """After each test, remove all users."""
+    def tearDown(self):
+        """After each test, remove all users."""
 
-#         User.query.delete()
-#         db.session.commit()
+        User.query.delete()
+        db.session.commit()
 
-#     def test_anon_profile(self):
-#         self.fail("FIXME: write this test")
+    def test_anon_profile(self):
+        with app.test_client() as client:
+            resp=client.get('/profile', follow_redirects=True)
 
-#     def test_logged_in_profile(self):
-#         self.fail("FIXME: write this test")
+            self.assertIn(b'You are not logged in', resp.data)
+            self.assertNotIn(b'Edit Your Profile', resp.data)
+            self.assertIsNone(session.get(CURR_USER_KEY))
 
-#     def test_anon_profile_edit(self):
-#         self.fail("FIXME: write this test")
+    def test_logged_in_profile(self):
+        with app.test_client() as client:
+            login_for_test(client, self.user_id)
 
-#     def test_logged_in_profile_edit(self):
-#         self.fail("FIXME: write this test")
+            resp=client.get('/profile', follow_redirects=True)
+            self.assertIn(b"Edit Your Profile", resp.data)
+            self.assertIn(b'Testy MacTest', resp.data)
+            self.assertNotIn(b'You are not logged in', resp.data)
+            self.assertTrue(session.get(CURR_USER_KEY))
+
+    def test_anon_profile_edit(self):
+        with app.test_client() as client:
+            resp=client.post(
+                'profile/edit',
+                data= TEST_USER_DATA_EDIT,
+                follow_redirects=True)
+
+            self.assertIn(b'You are not logged in', resp.data)
+            self.assertNotIn(b'Profile edited', resp.data)
+            self.assertNotIn(b'new-fn', resp.data)
+
+    def test_logged_in_profile_edit(self):
+        with app.test_client() as client:
+            login_for_test(client, self.user_id)
+
+            resp=client.post(
+                'profile/edit',
+                data= TEST_USER_DATA_EDIT,
+                follow_redirects=True)
+
+            self.assertNotIn(b'You are not logged in', resp.data)
+            self.assertIn(b'Profile edited', resp.data)
+            self.assertIn(b'new-fn new-ln', resp.data)
+            self.assertIn(b'new-email@test.com', resp.data)
 
 
 #######################################
