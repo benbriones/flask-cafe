@@ -11,7 +11,7 @@ from unittest import TestCase
 
 from flask import session
 from app import app , CURR_USER_KEY
-from models import db, Cafe, City, connect_db, User  # , User, Like
+from models import db, Cafe, City, connect_db, User, Like
 
 # Make Flask errors be real errors, rather than HTML pages with error info
 app.config['TESTING'] = True
@@ -569,4 +569,61 @@ class ProfileViewsTestCase(TestCase):
 class LikeViewsTestCase(TestCase):
     """Tests for views on cafes."""
 
-    # FIXME: add setup/teardown/inidividual tests
+    def setUp(self):
+        """Before each test, add sample user, city, cafes, likes"""
+        Like.query.delete()
+        User.query.delete()
+        Cafe.query.delete()
+        City.query.delete()
+
+        sf = City(**CITY_DATA)
+        db.session.add(sf)
+
+        cafe = Cafe(**CAFE_DATA)
+        db.session.add(cafe)
+
+        user = User.register(**TEST_USER_DATA)
+        db.session.add(user)
+
+        user.liked_cafes.append(cafe)
+
+        db.session.commit()
+
+        self.cafe_id = cafe.id
+        self.user_id = user.id
+
+    def tearDown(self):
+        """After each test, remove all users."""
+
+        Like.query.delete()
+        Cafe.query.delete()
+        City.query.delete()
+        User.query.delete()
+        db.session.commit()
+
+    def test_likes_display(self):
+        """Tests like list is displayed in user profile"""
+
+        with app.test_client() as client:
+            login_for_test(client, self.user_id)
+            resp = client.get('/profile')
+
+            self.assertIn(b'Your Liked Cafes', resp.data)
+            self.assertIn(b'Test Cafe', resp.data)
+
+    def test_no_likes_display(self):
+        """Tests correct display if user has no likes"""
+        user2 = User(**TEST_USER_DATA_NEW)
+        db.session.add(user2)
+        db.session.commit()
+
+        with app.test_client() as client:
+            login_for_test(client, user2.id)
+
+            resp = client.get('/profile')
+
+            self.assertIn(b"Your Liked Cafes", resp.data)
+            self.assertIn(b"You have no liked cafes", resp.data)
+
+
+

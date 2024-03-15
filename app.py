@@ -7,7 +7,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 
-from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User
+from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User, DEFAULT_CAFE_IMG_URL
 from forms import AddEditCafeForm, SignUpForm, CSRFProtectForm, LoginForm, ProfileEditForm
 
 
@@ -214,7 +214,7 @@ def add_cafe():
             url=form.url.data,
             address=form.address.data,
             city_code=form.city_code.data,
-            image_url=form.image_url.data
+            image_url=form.image_url.data or Cafe.image_url.default.arg
         )
 
         db.session.add(cafe)
@@ -242,15 +242,23 @@ def edit_cafe(cafe_id):
     form = AddEditCafeForm(obj=cafe)
     form.city_code.choices = City.get_choices()
 
+
+
     if form.validate_on_submit():
         form.populate_obj(cafe)
-        cafe.image_url = form.image_url.data or DEFAULT_PROF_IMG_URL
+
+        if not form.image_url.data:
+            cafe.image_url = Cafe.image_url.default.arg
 
         db.session.commit()
 
         flash(f'{cafe.name} edited!')
         redirect_url = url_for('cafe_detail', cafe_id=cafe.id)
         return redirect(redirect_url)
+
+    # make it so relative isn't showed
+    if cafe.image_url == Cafe.image_url.default.arg:
+        form.image_url.data = ""
 
     return render_template('cafe/edit-form.html', form=form, cafe=cafe)
 

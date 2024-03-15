@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 DEFAULT_PROF_IMG_URL = '/static/images/default-pic.png'
+DEFAULT_CAFE_IMG_URL = '/static/images/default-cafe.png'
 
 
 class City(db.Model):
@@ -80,7 +81,8 @@ class Cafe(db.Model):
     image_url = db.Column(
         db.Text,
         nullable=False,
-        default="/static/images/default-cafe.png"
+        default=DEFAULT_CAFE_IMG_URL
+
     )
 
     city = db.relationship("City", backref='cafes')
@@ -148,6 +150,8 @@ class User(db.Model):
         nullable=False,
     )
 
+    liked_cafes = db.relationship('Cafe', secondary='likes', backref='liking_users')
+
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
 
@@ -180,7 +184,6 @@ class User(db.Model):
                    description=description or '',
                    image_url=image_url or DEFAULT_PROF_IMG_URL,
                    password=hashed)
-    #TODO: check these params, is the default img needed?
         db.session.add(user)
         return user
 
@@ -196,6 +199,26 @@ class User(db.Model):
         else:
             return False
 
+
+class Like(db.Model):
+    """User's liked cafes"""
+
+    __tablename__ = 'likes'
+
+    # each row represents a user liking a cafe
+    # making a primary key + foreign key makes every user and like combo unique
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='cascade'),
+        primary_key=True
+    )
+
+    cafe_id = db.Column(
+        db.Integer,
+        db.ForeignKey('cafes.id', ondelete="cascade"),
+        primary_key=True
+    )
 
 
 

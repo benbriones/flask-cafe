@@ -26,6 +26,18 @@
 
   </div>
 
+  <div class="col-12 col-sm-4 col-md-5">
+    <h3>Your Liked Cafes</h3>
+      {% if g.user.liked_cafes %}
+        {% for cafe in g.user.liked_cafes %}
+          <a class="btn btn-outline-primary"
+          href="/cafes/{{ cafe.id }}">{{ cafe.name }}</a>
+        {% endfor %}
+      {% else %}
+        <h4>You have no liked cafes.</h4>
+      {% endif %}
+  </div>
+
 </div>
 
 {% endblock %}

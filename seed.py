@@ -1,6 +1,6 @@
 """Initial data."""
 
-from models import City, Cafe, db , User
+from models import City, Cafe, db , User, Like
 
 from app import app
 
@@ -75,11 +75,11 @@ db.session.commit()
 #######################################
 # add likes
 
-# u1.liked_cafes.append(c1)
-# u1.liked_cafes.append(c2)
-# ua.liked_cafes.append(c1)
+u1.liked_cafes.append(c1)
+u1.liked_cafes.append(c2)
+ua.liked_cafes.append(c1)
 
-# db.session.commit()
+db.session.commit()
 
 
 #######################################
