@@ -222,8 +222,6 @@ class Like(db.Model):
 
 
 
-
-
 def connect_db(app):
     """Connect this database to provided Flask app.
 

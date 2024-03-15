@@ -1,17 +1,16 @@
 """Tests for Flask Cafe."""
 
 
+from app import app, CURR_USER_KEY
+from models import db, Cafe, City, connect_db, User, Like
+from flask import session
+from unittest import TestCase
+import re
 import os
 
 os.environ["DATABASE_URL"] = "postgresql:///flaskcafe_test"
 os.environ["FLASK_DEBUG"] = "0"
 
-import re
-from unittest import TestCase
-
-from flask import session
-from app import app , CURR_USER_KEY
-from models import db, Cafe, City, connect_db, User, Like
 
 # Make Flask errors be real errors, rather than HTML pages with error info
 app.config['TESTING'] = True
@@ -30,7 +29,7 @@ db.create_all()
 def debug_html(response, label="DEBUGGING"):  # pragma: no cover
     """Prints HTML response; useful for debugging tests."""
 
-    print("\n\n\n", "*********", label, "\n")
+    print("\n\n\n", "*********567891", label, "\n")
     print(response.data.decode('utf8'))
     print("\n\n")
 
@@ -229,7 +228,7 @@ class CafeViewsTestCase(TestCase):
 
     def test_detail(self):
         with app.test_client() as client:
-            login_for_test(client,self.user_id)
+            login_for_test(client, self.user_id)
             resp = client.get(f"/cafes/{self.cafe_id}")
             self.assertEqual(resp.status_code, 200)
             self.assertIn(b"Test Cafe", resp.data)
@@ -244,10 +243,8 @@ class CafeAdminViewsTestCase(TestCase):
         City.query.delete()
         Cafe.query.delete()
 
-
         sf = City(**CITY_DATA)
         db.session.add(sf)
-
 
         cafe = Cafe(**CAFE_DATA)
         db.session.add(cafe)
@@ -274,7 +271,7 @@ class CafeAdminViewsTestCase(TestCase):
 
     def test_add(self):
         with app.test_client() as client:
-            login_for_test(client,self.user_id)
+            login_for_test(client, self.user_id)
 
             resp = client.get(f"/cafes/add")
             self.assertIn(b'Add Cafe', resp.data)
@@ -295,7 +292,7 @@ class CafeAdminViewsTestCase(TestCase):
             r'San Francisco</option></select>')
 
         with app.test_client() as client:
-            login_for_test(client,self.admin_id)
+            login_for_test(client, self.admin_id)
             resp = client.get(f"/cafes/add")
             self.assertRegex(resp.data.decode('UTF-8'), choices_pattern)
 
@@ -306,7 +303,7 @@ class CafeAdminViewsTestCase(TestCase):
         id = self.cafe_id
 
         with app.test_client() as client:
-            login_for_test(client,self.admin_id)
+            login_for_test(client, self.admin_id)
             resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
             self.assertIn(b'Edit Test Cafe', resp.data)
 
@@ -320,7 +317,7 @@ class CafeAdminViewsTestCase(TestCase):
         id = self.cafe_id
 
         with app.test_client() as client:
-            login_for_test(client,self.admin_id)
+            login_for_test(client, self.admin_id)
             resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
             self.assertIn(b'Test description', resp.data)
 
@@ -431,7 +428,6 @@ class AuthViewsTestCase(TestCase):
                 follow_redirects=True,
             )
 
-
             self.assertIn(b"Invalid credentials", resp.data)
 
             resp = client.post(
@@ -520,7 +516,7 @@ class ProfileViewsTestCase(TestCase):
 
     def test_anon_profile(self):
         with app.test_client() as client:
-            resp=client.get('/profile', follow_redirects=True)
+            resp = client.get('/profile', follow_redirects=True)
 
             self.assertIn(b'You are not logged in', resp.data)
             self.assertNotIn(b'Edit Your Profile', resp.data)
@@ -530,7 +526,7 @@ class ProfileViewsTestCase(TestCase):
         with app.test_client() as client:
             login_for_test(client, self.user_id)
 
-            resp=client.get('/profile', follow_redirects=True)
+            resp = client.get('/profile', follow_redirects=True)
             self.assertIn(b"Edit Your Profile", resp.data)
             self.assertIn(b'Testy MacTest', resp.data)
             self.assertNotIn(b'You are not logged in', resp.data)
@@ -538,22 +534,25 @@ class ProfileViewsTestCase(TestCase):
 
     def test_anon_profile_edit(self):
         with app.test_client() as client:
-            resp=client.post(
+            resp = client.post(
                 'profile/edit',
-                data= TEST_USER_DATA_EDIT,
+                data=TEST_USER_DATA_EDIT,
                 follow_redirects=True)
 
+            self.assertEqual(resp.status_code, 200)
             self.assertIn(b'You are not logged in', resp.data)
             self.assertNotIn(b'Profile edited', resp.data)
-            self.assertNotIn(b'new-fn', resp.data)
+            self.assertIn(b'Username', resp.data)
+            self.assertIn(b'Password', resp.data)
+
 
     def test_logged_in_profile_edit(self):
         with app.test_client() as client:
             login_for_test(client, self.user_id)
 
-            resp=client.post(
+            resp = client.post(
                 'profile/edit',
-                data= TEST_USER_DATA_EDIT,
+                data=TEST_USER_DATA_EDIT,
                 follow_redirects=True)
 
             self.assertNotIn(b'You are not logged in', resp.data)
@@ -585,7 +584,6 @@ class LikeViewsTestCase(TestCase):
         user = User.register(**TEST_USER_DATA)
         db.session.add(user)
 
-        user.liked_cafes.append(cafe)
 
         db.session.commit()
 
@@ -602,17 +600,23 @@ class LikeViewsTestCase(TestCase):
         db.session.commit()
 
     def test_likes_display(self):
-        """Tests like list is displayed in user profile"""
+        """Tests like list is displayed in user profile if user has liked cafes"""
 
         with app.test_client() as client:
             login_for_test(client, self.user_id)
+
+            user = User.query.get_or_404(self.user_id)
+            cafe = Cafe.query.get_or_404(self.cafe_id)
+
+            user.liked_cafes.append(cafe)
             resp = client.get('/profile')
 
             self.assertIn(b'Your Liked Cafes', resp.data)
             self.assertIn(b'Test Cafe', resp.data)
 
     def test_no_likes_display(self):
-        """Tests correct display if user has no likes"""
+        """Tests correct display if user has no liked cafes"""
+
         user2 = User(**TEST_USER_DATA_NEW)
         db.session.add(user2)
         db.session.commit()
@@ -625,5 +629,68 @@ class LikeViewsTestCase(TestCase):
             self.assertIn(b"Your Liked Cafes", resp.data)
             self.assertIn(b"You have no liked cafes", resp.data)
 
+    def test_get_api_like(self):
+        """Tests get request to like api"""
+
+        like = Like(user_id=self.user_id, cafe_id=self.cafe_id)
+        db.session.add(like)
+        db.session.commit()
+
+        with app.test_client() as client:
+            resp_fail = client.get(
+                '/api/likes',
+                query_string={"cafe_id": self.cafe_id})
+
+            self.assertEqual(resp_fail.json, {"error": "Not logged in"})
+
+            login_for_test(client, self.user_id)
+
+            resp_success = client.get(
+                '/api/likes',
+                query_string={"cafe_id": self.cafe_id})
+
+            self.assertEqual(resp_success.json, {"likes": True})
+
+    def test_post_api_like(self):
+        """Tests post request to like API adds cafe to likes"""
+
+        with app.test_client() as client:
+            resp_fail = client.post(
+                f"/api/like",
+                json={"cafe_id": self.cafe_id})
+
+            self.assertEqual(resp_fail.json, {"error": "Not logged in"})
+
+            login_for_test(client, self.user_id)
+
+            resp_success = client.post(
+                f"/api/like",
+                json={"cafe_id": self.cafe_id})
+
+            self.assertEqual(resp_success.json, {"liked": self.cafe_id})
+
+    def test_post_unlike(self):
+        """Tests post request to unlike API removes cafe from likes"""
+
+        with app.test_client() as client:
+            resp_fail = client.post(
+                f"/api/unlike",
+                json={"cafe_id": self.cafe_id})
+
+            self.assertEqual(resp_fail.json, {"error": "Not logged in"})
 
 
+
+            login_for_test(client, self.user_id)
+            user = User.query.get_or_404(self.user_id)
+            cafe = Cafe.query.get_or_404(self.cafe_id)
+
+            user.liked_cafes.append(cafe)
+
+            resp_successs = client.post(
+                f"/api/unlike",
+                json={"cafe_id": self.cafe_id})
+
+
+
+            self.assertEqual(resp_successs.json, {"unliked": self.cafe_id})

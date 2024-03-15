@@ -14,13 +14,8 @@
 
     <h1>{{ cafe.name }}</h1>
     <span>
-      {% if cafe in g.user.liked_cafes %}
-        <button name='{{cafe.id}}' class="btn btn-primary"
-        id="like-unlike">Unlike</button>
-      {% else %}
-        <button name='{{cafe.id}}' class="btn btn-outline-primary"
-        id="like-unlike">Like</button>
-      {% endif %}
+        <button name='{{ cafe.id }}' class="btn btn-primary like-button"
+        id="{{ cafe.id }}"></button>
     </span>
 
     <p class="lead">{{ cafe.description }}</p>
@@ -41,4 +36,7 @@
   </div>
 
 </div>
+
+<script src="/static/likes.js"></script>
+
 {% endblock %}

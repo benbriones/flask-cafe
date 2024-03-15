@@ -2,12 +2,12 @@
 
 import os
 
-from flask import Flask, render_template, flash, redirect, url_for, session, g
+from flask import Flask, render_template, flash, redirect, url_for, session, g, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 
-from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User, DEFAULT_CAFE_IMG_URL
+from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User, DEFAULT_CAFE_IMG_URL, Like
 from forms import AddEditCafeForm, SignUpForm, CSRFProtectForm, LoginForm, ProfileEditForm
 
 
@@ -43,6 +43,7 @@ def add_user_to_g():
     else:
         g.user = None
 
+
 @app.before_request
 def add_csrf_form_to_g():
     """Add csrf protection"""
@@ -61,6 +62,7 @@ def do_logout():
 
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
+
 
 @app.route('/signup', methods=["GET", "POST"])
 def signup():
@@ -96,7 +98,7 @@ def signup():
             return render_template('auth/signup-form.html', form=form)
 
         do_login(user)
-        flash('You are signed up and logged in.')
+        flash('You are signed up and logged in.', 'success')
         return redirect('/cafes')
 
     return render_template('auth/signup-form.html', form=form)
@@ -128,6 +130,7 @@ def login():
 
     return render_template('/auth/login-form.html', form=form)
 
+
 @app.post('/logout')
 def logout():
     """logout user"""
@@ -140,11 +143,9 @@ def logout():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-
     do_logout()
     flash("You've been successfully logged out!", "success")
     return redirect('/login')
-
 
 
 #######################################
@@ -169,7 +170,6 @@ def cafe_list():
         flash(NOT_LOGGED_IN_MSG, 'danger')
         return redirect('/login')
 
-
     cafes = Cafe.query.order_by('name').all()
 
     return render_template(
@@ -193,7 +193,8 @@ def cafe_detail(cafe_id):
         cafe=cafe,
     )
 
-@app.route('/cafes/add', methods = ["GET", "POST"])
+
+@app.route('/cafes/add', methods=["GET", "POST"])
 def add_cafe():
     """
     GET: show form to add a cafe
@@ -220,13 +221,14 @@ def add_cafe():
         db.session.add(cafe)
         db.session.commit()
 
-        flash(f'{cafe.name} added!')
-        redirect_url=url_for('cafe_detail', cafe_id=cafe.id)
+        flash(f'{cafe.name} added!', "success")
+        redirect_url = url_for('cafe_detail', cafe_id=cafe.id)
         return redirect(redirect_url)
 
     return render_template('cafe/add-form.html', form=form)
 
-@app.route('/cafes/<int:cafe_id>/edit', methods = ["GET", "POST"])
+
+@app.route('/cafes/<int:cafe_id>/edit', methods=["GET", "POST"])
 def edit_cafe(cafe_id):
     """
     GET: show form to edit a cafe
@@ -241,8 +243,6 @@ def edit_cafe(cafe_id):
 
     form = AddEditCafeForm(obj=cafe)
     form.city_code.choices = City.get_choices()
-
-
 
     if form.validate_on_submit():
         form.populate_obj(cafe)
@@ -276,6 +276,7 @@ def display_user_profile():
 
     return render_template('profile/detail.html')
 
+
 @app.route('/profile/edit', methods=["POST", "GET"])
 def edit_user():
     """
@@ -303,3 +304,61 @@ def edit_user():
         form.image_url.data = ""
 
     return render_template('/profile/edit-form.html', form=form)
+
+
+#########################
+# likes
+
+@app.get('/api/likes')
+def check_like():
+    """
+    Check if current user likes a speficifc cafe,returns
+    JSON like: {"likes": true|false}
+    """
+
+    if not g.user:
+        return {"error": "Not logged in"}
+
+    cafe_id = request.args.get('cafe_id')
+    cafe = Cafe.query.get_or_404(cafe_id)
+
+    status = cafe in g.user.liked_cafes
+    return jsonify(likes=status)
+
+
+@app.post('/api/like')
+def like_cafe():
+    """
+    Given JSON like {"cafe_id": 1}, make the current user like cafe
+    with corresponding ID. Return JSON {"liked": 1}.
+    """
+
+    if not g.user:
+        return {"error": "Not logged in"}
+
+    cafe_id = request.json["cafe_id"]
+    cafe = Cafe.query.get_or_404(cafe_id)
+
+    g.user.liked_cafes.append(cafe)
+
+    db.session.commit()
+
+    return jsonify(liked=cafe_id)
+
+@app.post('/api/unlike')
+def unlike_cafe():
+    """
+    Given JSON like {"cafe_id": 1}, make the current user unlike cafe
+    with corresponding ID. Return JSON like {"unliked": 1}.
+    """
+
+    if not g.user:
+        return {"error": "Not logged in"}
+
+    cafe_id = request.json["cafe_id"]
+    like = Like.query.get_or_404((g.user.id, cafe_id))
+
+    db.session.delete(like)
+    db.session.commit()
+
+    return jsonify(unliked=cafe_id)
