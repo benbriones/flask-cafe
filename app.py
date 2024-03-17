@@ -384,3 +384,10 @@ def unlike_cafe():
     db.session.commit()
 
     return jsonify(unliked=cafe_id)
+
+#####################
+# errors
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html")
