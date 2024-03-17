@@ -7,6 +7,7 @@ from flask import session
 from unittest import TestCase
 import re
 import os
+from werkzeug.exceptions import Unauthorized
 
 os.environ["DATABASE_URL"] = "postgresql:///flaskcafe_test"
 os.environ["FLASK_DEBUG"] = "0"
@@ -271,7 +272,7 @@ class CafeAdminViewsTestCase(TestCase):
 
     def test_add(self):
         with app.test_client() as client:
-            login_for_test(client, self.user_id)
+            login_for_test(client, self.admin_id)
 
             resp = client.get(f"/cafes/add")
             self.assertIn(b'Add Cafe', resp.data)
@@ -312,6 +313,21 @@ class CafeAdminViewsTestCase(TestCase):
                 data=CAFE_DATA_EDIT,
                 follow_redirects=True)
             self.assertIn(b'edited', resp.data)
+
+    def test_unauthorized_edit(self):
+        id = self.cafe_id
+
+        with app.test_client() as client:
+            #login as unauthorized user
+            login_for_test(client, self.user_id)
+            resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
+            self.assertNotIn(b'Edit Test Cafe', resp.data)
+
+            resp = client.post(
+                f"/cafes/{id}/edit",
+                data=CAFE_DATA_EDIT,
+                follow_redirects=True)
+            self.assertNotIn(b'edited', resp.data)
 
     def test_edit_form_shows_curr_data(self):
         id = self.cafe_id

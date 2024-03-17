@@ -34,8 +34,9 @@
 
 </div>
 
+{% if g.user.admin %}
 <div class="mt-3">
   <a href="/cafes/add" class="btn btn-outline-primary">Add a Cafe</a>
 </div>
-
+{% endif %}
 {% endblock %}

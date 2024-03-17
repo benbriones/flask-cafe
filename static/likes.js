@@ -82,6 +82,7 @@ function changeButtonToUnliked() {
 
 $likeBtn.on('click', handleLikeClick);
 
+/**On start of page, have the proper like button state */
 async function start() {
   const cafeId = $likeBtn.attr('id');
   const liked = await isLiked(cafeId);

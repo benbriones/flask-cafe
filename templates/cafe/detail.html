@@ -27,11 +27,22 @@
       {{ cafe.get_city_state() }}<br>
     </p>
 
+    {% if g.user.admin %}
     <p>
       <a class="btn btn-outline-primary" href="/cafes/{{ cafe.id }}/edit">
         Edit Cafe
       </a>
     </p>
+    {% endif %}
+
+
+    <div class = "cafe-map">
+      <img src="/static/maps/{{ cafe.id }}.jpg"
+      alt="map of {{ cafe.name }}"
+      style = "height: 350px; width: 350px">
+    </div>
+
+
 
   </div>
 

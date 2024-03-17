@@ -6,6 +6,7 @@ from flask import Flask, render_template, flash, redirect, url_for, session, g, 
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import Unauthorized
 
 from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User, DEFAULT_CAFE_IMG_URL, Like
 from forms import AddEditCafeForm, SignUpForm, CSRFProtectForm, LoginForm, ProfileEditForm
@@ -122,7 +123,7 @@ def login():
 
         if user:
             do_login(user)
-            flash(f'Hello, {user.username}!')
+            flash(f'Hello, {user.username}!', 'success')
 
             return redirect("/cafes")
 
@@ -205,6 +206,9 @@ def add_cafe():
         flash(NOT_LOGGED_IN_MSG, 'danger')
         return redirect('/login')
 
+    if not g.user.admin:
+        raise Unauthorized()
+
     form = AddEditCafeForm()
     form.city_code.choices = City.get_choices()
 
@@ -219,6 +223,10 @@ def add_cafe():
         )
 
         db.session.add(cafe)
+        db.session.flush()
+        cafe.save_cafe_map()
+
+
         db.session.commit()
 
         flash(f'{cafe.name} added!', "success")
@@ -239,7 +247,12 @@ def edit_cafe(cafe_id):
         flash(NOT_LOGGED_IN_MSG, 'danger')
         return redirect('/login')
 
+    if not g.user.admin:
+        raise Unauthorized()
+
     cafe = Cafe.query.get_or_404(cafe_id)
+    old_address = cafe.address
+    old_city = cafe.city_code
 
     form = AddEditCafeForm(obj=cafe)
     form.city_code.choices = City.get_choices()
@@ -247,10 +260,19 @@ def edit_cafe(cafe_id):
     if form.validate_on_submit():
         form.populate_obj(cafe)
 
+        changed_location = (
+            old_address != form.address.data or
+            old_city != form.city_code.data
+            )
+
         if not form.image_url.data:
             cafe.image_url = Cafe.image_url.default.arg
 
+        if changed_location:
+            cafe.save_cafe_map()
+
         db.session.commit()
+
 
         flash(f'{cafe.name} edited!')
         redirect_url = url_for('cafe_detail', cafe_id=cafe.id)
