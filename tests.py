@@ -7,7 +7,6 @@ from flask import session
 from unittest import TestCase
 import re
 import os
-from werkzeug.exceptions import Unauthorized
 
 os.environ["DATABASE_URL"] = "postgresql:///flaskcafe_test"
 os.environ["FLASK_DEBUG"] = "0"

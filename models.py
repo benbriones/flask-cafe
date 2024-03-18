@@ -3,7 +3,7 @@
 
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
-from maps import save_map
+from maps import save_map, delete_map
 
 
 bcrypt = Bcrypt()
@@ -95,6 +95,13 @@ class Cafe(db.Model):
         """saves map for cafe"""
 
         save_map(self.id, self.address, self.city.name, self.city.state)
+
+
+    def delete_cafe_map(self):
+        "deletes cafe map"
+
+        delete_map(self.id)
+
 
     def get_city_state(self):
         """Return 'city, state' for cafe."""

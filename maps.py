@@ -24,3 +24,12 @@ def save_map(id, address, city, state):
     with open(f"{path}/static/maps/{id}.jpg", "wb") as file:
         file.write(resp.content)
 
+def delete_map(id):
+    """Delete map image from static/maps directory"""
+
+    path = os.path.abspath(os.path.dirname(__file__))
+    file_path = f"{path}/static/maps/{id}.jpg"
+
+    os.remove(file_path)
+
+

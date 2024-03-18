@@ -6,7 +6,6 @@ from flask import Flask, render_template, flash, redirect, url_for, session, g, 
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-from werkzeug.exceptions import Unauthorized
 
 from models import connect_db, Cafe, db, City, DEFAULT_PROF_IMG_URL, User, DEFAULT_CAFE_IMG_URL, Like
 from forms import AddEditCafeForm, SignUpForm, CSRFProtectForm, LoginForm, ProfileEditForm
@@ -207,7 +206,8 @@ def add_cafe():
         return redirect('/login')
 
     if not g.user.admin:
-        raise Unauthorized()
+        flash("Unauthorized", "danger")
+        return redirect("/")
 
     form = AddEditCafeForm()
     form.city_code.choices = City.get_choices()
@@ -248,7 +248,8 @@ def edit_cafe(cafe_id):
         return redirect('/login')
 
     if not g.user.admin:
-        raise Unauthorized()
+        flash("Unauthorized access", "danger")
+        return redirect("/login")
 
     cafe = Cafe.query.get_or_404(cafe_id)
     old_address = cafe.address
@@ -283,6 +284,32 @@ def edit_cafe(cafe_id):
         form.image_url.data = ""
 
     return render_template('cafe/edit-form.html', form=form, cafe=cafe)
+
+@app.post('/cafes/<int:cafe_id>/delete')
+def delete_cafe(cafe_id):
+    """Deletes cafe from database"""
+
+    if not g.user:
+        flash(NOT_LOGGED_IN_MSG, "danger")
+        return redirect("/login")
+
+    if not g.user.admin:
+        flash("Unauthorized access", "danger")
+        return redirect("/login")
+
+    cafe = Cafe.query.get_or_404(cafe_id)
+
+    if g.csrf_form.validate_on_submit():
+        cafe.delete_cafe_map()
+
+        db.session.delete(cafe)
+        db.session.commit()
+
+        flash('Cafe deleted', 'success')
+        return redirect("/cafes")
+
+    flash("Unauthorized access", "danger")
+    return redirect("/login")
 
 
 #########################
@@ -375,7 +402,7 @@ def unlike_cafe():
     """
 
     if not g.user:
-        return {"error": "Not logged in"}
+        return jsonify({"error": "Not logged in"})
 
     cafe_id = request.json["cafe_id"]
     like = Like.query.get_or_404((g.user.id, cafe_id))

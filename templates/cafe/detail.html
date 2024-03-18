@@ -14,8 +14,7 @@
 
     <h1>{{ cafe.name }}</h1>
     <span>
-        <button name='{{ cafe.id }}' class="btn btn-primary like-button"
-        id="{{ cafe.id }}"></button>
+      <button name='{{ cafe.id }}' class="btn btn-primary like-button" id="{{ cafe.id }}"></button>
     </span>
 
     <p class="lead">{{ cafe.description }}</p>
@@ -28,19 +27,28 @@
     </p>
 
     {% if g.user.admin %}
-    <p>
-      <a class="btn btn-outline-primary" href="/cafes/{{ cafe.id }}/edit">
-        Edit Cafe
-      </a>
-    </p>
+    <div>
+      <p>
+        <a class="btn btn-outline-primary" href="/cafes/{{ cafe.id }}/edit">
+          Edit Cafe
+        </a>
+      </p>
+    </div>
+    <div class = "mb-2">
+
+      <form action="/cafes/{{cafe.id}}/delete" method="POST">
+        {{ g.csrf_form.hidden_tag() }}
+        <button type="submit" class="btn btn-outline-danger" >Delete Cafe</button>
+      </form>
+
+    </div>
     {% endif %}
 
 
-    <div class = "cafe-map">
-      <img src="/static/maps/{{ cafe.id }}.jpg"
-      alt="map of {{ cafe.name }}"
-      style = "height: 350px; width: 350px">
+    <div class="cafe-map">
+      <img src="/static/maps/{{ cafe.id }}.jpg" alt="map of {{ cafe.name }}" style="height: 350px; width: 350px">
     </div>
+
 
 
 
